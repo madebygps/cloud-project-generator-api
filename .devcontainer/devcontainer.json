@@ -1,0 +1,27 @@
+{
+	"name": "Azure Functions & Python 3",
+	"dockerFile": "Dockerfile",
+	"forwardPorts": [ 7071 ],
+
+	// Configure tool-specific properties.
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-azuretools.vscode-azurefunctions",
+				"ms-azuretools.vscode-docker",
+				"ms-python.python",
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"rangav.vscode-thunder-client"
+			]
+		}
+	},
+	
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "npm install",
+
+	// Set `remoteUser` to `root` to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "vscode"
+}
