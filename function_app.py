@@ -70,8 +70,9 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         results_for_prompt = vector_search(prompt)
         completions_results = generate_completion(results_for_prompt, prompt)
         project = (completions_results['choices'][0]['message']['content'])
-        response_data = {'project': project}
-        return func.HttpResponse(json.dumps(response_data), headers={'Content-Type': 'application/json'})
+        #response_data = {project}
+
+        return func.HttpResponse(project, headers={'Content-Type': 'application/json'})
     else:
         return func.HttpResponse(
             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
@@ -97,7 +98,7 @@ def generate_completion(results, user_input):
     You are an experienced cloud engineer who provides advice to people trying to get hands-on skills while studying for their cloud certifications. You are designed to provide helpful project ideas with a short description, list of possible services to use, and skills that need to be practiced.
     - Only provide project ideas that have products that are part of Microsoft Azure.
     - Each response should be a project idea with a short description, list of possible services to use, and skills that need to be practiced.
-    - Write two lines of whitespace between each answer in the list.
+    - It should be json formated with the following keys: project, description, services as an array, and skills as an array.
     - If you're unsure of an answer, you can say "I don't know" or "I'm not sure" and recommend users search themselves.
     '''
 
