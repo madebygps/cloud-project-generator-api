@@ -1,33 +1,10 @@
 import azure.functions as func
 import logging
 import os
-import json
-import datetime
 import time
-from azure.core.exceptions import AzureError
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
-from azure.search.documents.indexes import SearchIndexClient, SearchIndexerClient
 from azure.search.documents.models import Vector
-from azure.search.documents.indexes.models import (
-    IndexingSchedule,
-    SearchIndex,
-    SearchIndexer,
-    SearchIndexerDataContainer,
-    SearchField,
-    SearchFieldDataType,
-    SearchableField,
-    SemanticConfiguration,
-    SimpleField,
-    PrioritizedFields,
-    SemanticField,
-    SemanticSettings,
-    VectorSearch,
-    VectorSearchAlgorithmConfiguration,
-    SearchIndexerDataSourceConnection
-)
-
-
 import openai
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
@@ -46,12 +23,6 @@ index_name = "project-generator-index"
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
-# q: what is the best open source conference?
-# a: PyCon
-# q: don't you mean all things open?
-# a: no, I mean PyCon
-
-
 
 @app.route(route="http_trigger")
 def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
@@ -65,14 +36,18 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
             pass
         else:
             prompt = req_body.get('prompt')
-
     if prompt:
         results_for_prompt = vector_search(prompt)
         completions_results = generate_completion(results_for_prompt, prompt)
         project = (completions_results['choices'][0]['message']['content'])
-        #response_data = {project}
+        # Validate that the project variable is in json format, if invalid, return error message stating that API wasn't able to generate proper json, if valid return project to response with json headers and status code
+        try:
+            json_object = json.loads(project)
+        except ValueError as e:
+            return func.HttpResponse(f'API was unable to generate a valid json response: {e}', status_code=400)
+        else:
+            return func.HttpResponse(project, headers={'Content-Type': 'application/json'})
 
-        return func.HttpResponse(project, headers={'Content-Type': 'application/json'})
     else:
         return func.HttpResponse(
             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
@@ -94,12 +69,22 @@ def generate_embeddings(text):
 
 
 def generate_completion(results, user_input):
+    """
+    Generates a chatbot response using Azure OpenAI based on the user's input and a list related services from Azure Cognitive Search.
+
+    Args:
+        results (list): A list of possible services to use.
+        user_input (str): The user's input.
+
+    Returns:
+        dict: A dictionary containing the model's response.
+    """
     system_prompt = '''
-    You are an experienced cloud engineer who provides advice to people trying to get hands-on skills while studying for their cloud certifications. You are designed to provide helpful project ideas with a short description, list of possible services to use, and skills that need to be practiced.
+    You are an experienced cloud engineer who provides advice to people trying to get hands-on skills while studying for their cloud certifications. You are designed to provide helpful project ideas with a short description, list of possible services to use, skills that need to be practiced, and steps that should be taken to implement the project. 
     - Only provide project ideas that have products that are part of Microsoft Azure.
-    - Each response should be a project idea with a short description, list of possible services to use, and skills that need to be practiced.
-    - It should be json formated with the following keys: project, description, services as an array, and skills as an array.
-    - If you're unsure of an answer, you can say "I don't know" or "I'm not sure" and recommend users search themselves.
+    - Each response should be a project idea with a short description, list of possible services to use, skills that need to be practiced, and steps the user should take to complete the project.
+    - It should be json formated with the following keys: project, description, services as an array, skills as an array, steps as an array of strings, each string should be a step and numbered.
+    - If you're unsure of an answer, return empty strings for the values.
     '''
 
     messages = [
@@ -108,7 +93,6 @@ def generate_completion(results, user_input):
     ]
 
     for item in results:
-        print(item)
         messages.append({"role": "system", "content": item['service_name']})
 
     response = openai.ChatCompletion.create(
@@ -118,6 +102,15 @@ def generate_completion(results, user_input):
 
 
 def vector_search(query):
+    """
+    Searches for documents in the index that are similar to the given query vector.
+
+    Args:
+        query (str): The query string to search for.
+
+    Returns:
+        SearchResult: The search result object containing the matching documents.
+    """
     search_client = SearchClient(
         cog_search_endpoint, index_name, cog_search_cred)
     results = search_client.search(
