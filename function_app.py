@@ -1,6 +1,7 @@
 import azure.functions as func
 import logging
 import os
+import json
 import time
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
@@ -25,6 +26,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 
 @app.route(route="http_trigger")
+@app.function_name('http_trigger')
 def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
@@ -33,14 +35,18 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         try:
             req_body = req.get_json()
         except ValueError:
-            pass
+            print("Caught ValueError for invalid JSON")
+            return func.HttpResponse(
+                body=json.dumps({'message': 'Invalid JSON request body and no prompt in the query string'}),
+                status_code=400
+            )
         else:
             prompt = req_body.get('prompt')
     if prompt:
         results_for_prompt = vector_search(prompt)
         completions_results = generate_completion(results_for_prompt, prompt)
         project = (completions_results['choices'][0]['message']['content'])
-        # Validate that the project variable is in json format, if invalid, return error message stating that API wasn't able to generate proper json, if valid return project to response with json headers and status code
+        # Validate that project is valid json. If invalid, return error message stating that API wasn't able to generate proper json, if valid return project to response with json headers and status code
         try:
             json_object = json.loads(project)
         except ValueError as e:
@@ -48,11 +54,7 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         else:
             return func.HttpResponse(project, headers={'Content-Type': 'application/json'})
 
-    else:
-        return func.HttpResponse(
-            "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-            status_code=200
-        )
+   
 
 
 @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(10))
