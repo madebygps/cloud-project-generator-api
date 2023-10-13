@@ -46,15 +46,24 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         results_for_prompt = vector_search(prompt)
         completions_results = generate_completion(results_for_prompt, prompt)
         project = (completions_results['choices'][0]['message']['content'])
-        # Validate that project is valid json. If invalid, return error message stating that API wasn't able to generate proper json, if valid return project to response with json headers and status code
+        # Validate that project is valid json. 
+        # If invalid, return error message stating that API wasn't able to generate proper json.
+        # If valid return project to response with json headers and status code.
         try:
-            json_object = json.loads(project)
-        except ValueError as e:
-            return func.HttpResponse(f'API was unable to generate a valid json response: {e}', status_code=400)
+            project = json.loads(project)
+        except ValueError:
+            print("Caught ValueError for invalid JSON")
+            return func.HttpResponse(
+                body=json.dumps({'message': 'API was unable to generate proper JSON response'}),
+                status_code=400
+            )
         else:
-            return func.HttpResponse(project, headers={'Content-Type': 'application/json'})
-
-   
+            return func.HttpResponse(
+                body=json.dumps(project),
+                status_code=200,
+                mimetype="application/json"
+            )
+        
 
 
 @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(10))
@@ -86,6 +95,7 @@ def generate_completion(results, user_input):
     - Only provide project ideas that have products that are part of Microsoft Azure.
     - Each response should be a project idea with a short description, list of possible services to use, skills that need to be practiced, and steps the user should take to complete the project.
     - It should be json formated with the following keys: project, description, services as an array, skills as an array, steps as an array of strings, each string should be a step and numbered.
+    - the skills array should not include any azure products, only skills that need to be practiced.
     - If you're unsure of an answer, return empty strings for the values.
     '''
 
