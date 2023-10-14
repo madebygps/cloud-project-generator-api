@@ -95,7 +95,7 @@ def generate_completion(results, user_input):
     - Only provide project ideas that have products that are part of Microsoft Azure.
     - Each response should be a project idea with a short description, list of possible services to use, skills that need to be practiced, and steps the user should take to complete the project.
     - It should be json formated with the following keys: project, description, services as an array, skills as an array, steps as an array of strings, each string should be a step and numbered.
-    - the skills array should not include any azure products, only skills that need to be practiced.
+    - DO NOT include azure products in the skills array, only skills that need to be practiced.
     - If you're unsure of an answer, return empty strings for the values.
     '''
 
