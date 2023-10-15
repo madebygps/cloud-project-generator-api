@@ -12,6 +12,8 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 
 cog_search_endpoint = os.environ['cognitive_search_api_endpoint']
 cog_search_key = os.environ['cognitive_search_api_key']
+prompt = os.environ['prompt']
+
 
 openai.api_type = os.environ['openai_api_type']
 openai.api_key = os.environ['openai_api_key']
@@ -46,9 +48,6 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         results_for_prompt = vector_search(prompt)
         completions_results = generate_completion(results_for_prompt, prompt)
         project = (completions_results['choices'][0]['message']['content'])
-        # Validate that project is valid json. 
-        # If invalid, return error message stating that API wasn't able to generate proper json.
-        # If valid return project to response with json headers and status code.
         try:
             project = json.loads(project)
         except ValueError:
@@ -90,17 +89,10 @@ def generate_completion(results, user_input):
     Returns:
         dict: A dictionary containing the model's response.
     """
-    system_prompt = '''
-    You are an experienced cloud engineer who provides advice to people trying to get hands-on skills while studying for their cloud certifications. You are designed to provide helpful project ideas with a short description, list of possible services to use, skills that need to be practiced, and steps that should be taken to implement the project. 
-    - Only provide project ideas that have products that are part of Microsoft Azure.
-    - Each response should be a project idea with a short description, list of possible services to use, skills that need to be practiced, and steps the user should take to complete the project.
-    - It should be json formated with the following keys: project, description, services as an array, skills as an array, steps as an array of strings, each string should be a step and numbered.
-    - DO NOT include azure products in the skills array, only skills that need to be practiced.
-    - If you're unsure of an answer, return empty strings for the values.
-    '''
+    
 
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": prompt},
         {"role": "user", "content": user_input},
     ]
 
