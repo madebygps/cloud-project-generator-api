@@ -9,18 +9,15 @@ from azure.search.documents.models import Vector
 import openai
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
-
 cog_search_endpoint = os.environ['cognitive_search_api_endpoint']
 cog_search_key = os.environ['cognitive_search_api_key']
-prompt = os.environ['prompt']
-
-
 openai.api_type = os.environ['openai_api_type']
 openai.api_key = os.environ['openai_api_key']
 openai.api_base = os.environ['openai_api_endpoint']
 openai.api_version = os.environ['openai_api_version']
 embeddings_deployment = os.environ['openai_embeddings_deployment']
 completions_deployment = os.environ['openai_completions_deployment']
+prompt = ("PROVIDE EXACTLY ONE PROJECT IDEA IN JSON FORMAT FOR THE CERTIFICATION MENTIONED BELOW. PROJECT IDEA MUST: - INCLUDE A SHORT DESCRIPTION THAT DESCRIBES WHAT THE PROJECT IS ABOUT - INCLUDE A LIST OF POSSIBLE AZURE SERVICES TO USE TO BUILD THE PROJECT - INCLUDE A LIST SKILLS THAT WILL BE PRACTICED AS THE PROJECT IS BUILT - INCLUDE A LIST OF STEPS THE USER SHOULD TAKE TO COMPLETE THE PROJECT - BE JSON FORMATED WITH THE FOLLOWING KEYS: project, description, services AS AN ARRAY OF STRINGS, skills AS AN ARRAY OF STRINGS, steps AS AN ARRAY OF STRINGS - NOT INCLUDE ANY AZURE, MICROSOFT, AMAZON, GOOGLE OR ANY OTHER CLOUD PRODUCTS IN THE SKILLS LIST AND OR ARRAY BE HELPFUL AND DESCRIPTIVE YOU ARE AN EXPERIENCED CLOUD ENGINEER")
 cog_search_cred = AzureKeyCredential(cog_search_key)
 index_name = "project-generator-index"
 
