@@ -9,6 +9,7 @@ openai
 python-dotenv
 azure-core
 tenacity
+azure-search-documents
 # Install the following with --extra-index-url=https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-python/pypi/simple/
-azure-search-documents==11.4.0a20230509004
+#azure-search-documents==11.4.0a20230509004
 # pip install --extra-index-url=https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-python/pypi/simple/ azure-search-documents==11.4.0a20230509004
